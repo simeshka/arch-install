@@ -91,7 +91,7 @@ EOF
 main() {
   need_root
   echo "Syncing packages..."
-  pac -Sy
+  pac -Sy || true
 
   print_menu
   printf "Enter choice [1-9]: "
