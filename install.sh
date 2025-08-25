@@ -4,7 +4,6 @@ set -euo pipefail
 # ===== Defaults you can override with flags =====
 SWAP="4G"
 ROOT="20G"
-HOME="100%"        # "100%" means use the rest of the disk
 USER="home"
 HOST="arch"
 DEVICE="/dev/sda"  # change if needed, e.g. /dev/vda or /dev/nvme0n1
@@ -33,11 +32,6 @@ timedatectl set-ntp true
 # ---- Partition with fdisk (GPT, 4 parts: EFI, swap, root, home) ----
 # fdisk accepts +SIZE[M|G] endings. For "use rest": hit Enter on size prompt.
 # We'll construct the home size line depending on $HOME.
-if [[ "$HOME" == "100%" ]]; then
-  HOME_SIZE_LINE=""   # blank = default end (rest of disk)
-else
-  HOME_SIZE_LINE="+$HOME"
-fi
 
 # shellcheck disable=SC2059
 fdisk "$DEVICE" <<FDISK_CMDS
@@ -65,7 +59,7 @@ t
 n
 4
 
-$HOME
+
 t
 4
 42
