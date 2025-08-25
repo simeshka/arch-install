@@ -8,7 +8,7 @@ USER="home"
 HOST="arch"
 DEVICE="/dev/sda"  # change if needed, e.g. /dev/vda or /dev/nvme0n1
 ROOTPASS="1234"
-USERPASS="1234
+USERPASS="1234"
 
 # ===== Parse flags =====
 while [[ $# -gt 0 ]]; do
