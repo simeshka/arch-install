@@ -102,7 +102,7 @@ echo "LANG=en_US.UTF-8" > /etc/locale.conf
 CHROOT
 
 # write hostname & hosts from outside so we can use $HOST
-echo "$HOST" > /mnt/etc/hostname
+echo $HOST > /mnt/etc/hostname
 cat > /mnt/etc/hosts <<EOF
 127.0.0.1   localhost
 ::1         localhost
