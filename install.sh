@@ -13,7 +13,6 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --swap)  SWAP="$2"; shift 2 ;;
     --root)  ROOT="$2"; shift 2 ;;
-    --home)  HOME="$2"; shift 2 ;;
     --user)  USER="$2"; shift 2 ;;
     --host)  HOST="$2"; shift 2 ;;
     --disk)  DEVICE="$2"; shift 2 ;;   # optional: choose disk
