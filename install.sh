@@ -115,8 +115,12 @@ arch-chroot /mnt bash -lc "useradd -m -G wheel -s /bin/bash '$USER'"
 # enable sudo for wheel
 arch-chroot /mnt bash -lc "sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers"
 
-arch-chroot /mnt bash -lc "echo 'root:$ROOTPASS' | chpasswd"
-arch-chroot /mnt bash -lc "echo '$USER:$USERPASS' | chpasswd"
+arch-chroot /mnt chpasswd <<EOF
+root:$ROOTPASS
+EOF
+arch-chroot /mnt chpasswd <<EOF
+$USER:$USERPASS
+EOF
 
 
 # enable networking & install bootloader
