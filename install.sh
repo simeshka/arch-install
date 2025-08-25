@@ -83,7 +83,7 @@ mount "$HOME_PART" /mnt/home
 swapon "$SWAP_PART"
 
 # ---- Base install ----
-pacstrap -K /mnt base linux linux-firmware nano vim networkmanager grub efibootmgr
+pacstrap -K /mnt base linux linux-firmware nano vim networkmanager grub efibootmgr sudo
 
 genfstab -U /mnt >> /mnt/etc/fstab
 
@@ -105,7 +105,6 @@ cat > /mnt/etc/hosts <<EOF
 127.0.1.1   $HOST.localdomain $HOST
 EOF
 
-# set root password interactively inside chroot
 
 # create user with sudo (wheel)
 arch-chroot /mnt bash -lc "useradd -m -G wheel -s /bin/bash '$USER'"
