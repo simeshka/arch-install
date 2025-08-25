@@ -127,5 +127,4 @@ arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 # ---- Done ----
 umount -R /mnt
 swapoff -a
-echo "Install complete. Rebooting…"
 reboot
