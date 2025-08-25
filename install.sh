@@ -111,7 +111,7 @@ EOF
 
 
 # create user with sudo (wheel)
-arch-chroot /mnt bash -lc "useradd -m -G wheel -s /bin/bash '$USER'"
+arch-chroot /mnt useradd -m -G wheel -s /bin/bash '$USER'
 # enable sudo for wheel
 arch-chroot /mnt sed -i 's|^# %wheel ALL=(ALL:ALL) ALL|%wheel ALL=(ALL:ALL) ALL|' /etc/sudoers
 
