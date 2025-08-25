@@ -7,6 +7,8 @@ ROOT="20G"
 USER="home"
 HOST="arch"
 DEVICE="/dev/sda"  # change if needed, e.g. /dev/vda or /dev/nvme0n1
+ROOTPASS="1234"
+USERPASS="1234
 
 # ===== Parse flags =====
 while [[ $# -gt 0 ]]; do
@@ -16,12 +18,14 @@ while [[ $# -gt 0 ]]; do
     --user)  USER="$2"; shift 2 ;;
     --host)  HOST="$2"; shift 2 ;;
     --disk)  DEVICE="$2"; shift 2 ;;   # optional: choose disk
+    --rtps)  ROOTPASS="$2"; shift 2;;
+    --urps)  USERPASS="$2"; shift 2;;
     *) echo "Unknown arg: $1"; exit 1 ;;
   esac
 done
 
 echo "=== Arch Installer ==="
-echo "Disk: $DEVICE | Swap: $SWAP | Root: $ROOT | User: $USER | Host: $HOST"
+echo "Disk: $DEVICE | Swap: $SWAP | Root: $ROOT | User: $USER | Host: $HOST | Root passwd: $ROOTPASS | User passwd: $USERPASS"
 sleep 3
 
 # ---- net + time (ok to fail ping if offline mirror used) ----
@@ -110,6 +114,10 @@ EOF
 arch-chroot /mnt bash -lc "useradd -m -G wheel -s /bin/bash '$USER'"
 # enable sudo for wheel
 arch-chroot /mnt bash -lc "sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers"
+
+arch-chroot /mnt bash -lc "echo 'root:$ROOTPASS' | chpasswd"
+arch-chroot /mnt bash -lc "echo '$USER:$USERPASS' | chpasswd"
+
 
 # enable networking & install bootloader
 arch-chroot /mnt systemctl enable NetworkManager
