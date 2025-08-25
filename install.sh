@@ -5,8 +5,8 @@
 SWAP="4G"
 ROOT="20G"
 HOME="100%"
-USER="bestie"
-HOST="archbestie"
+USER="home"
+HOST="arch"
 
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
