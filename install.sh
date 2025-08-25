@@ -65,7 +65,7 @@ t
 n
 4
 
-$HOME_SIZE_LINE
+$HOME
 t
 4
 42
