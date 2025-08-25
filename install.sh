@@ -106,11 +106,9 @@ cat > /mnt/etc/hosts <<EOF
 EOF
 
 # set root password interactively inside chroot
-arch-chroot /mnt bash -lc 'echo "Set root password:"; passwd'
 
 # create user with sudo (wheel)
 arch-chroot /mnt bash -lc "useradd -m -G wheel -s /bin/bash '$USER'"
-arch-chroot /mnt bash -lc "echo 'Set password for $USER:'; passwd '$USER'"
 # enable sudo for wheel
 arch-chroot /mnt bash -lc "sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers"
 
