@@ -32,10 +32,10 @@ timedatectl set-ntp true
 # Partitioning (auto with sfdisk)
 cat <<EOF | sfdisk /dev/sda
 label: gpt
-,512M,U        # EFI
-,$SWAP,S       # Swap
-,$ROOT,L       # Root
-,$HOME,L       # Home (rest of disk if 100%)
+,512M, type=uefi        # EFI
+,$SWAP, type=swap       # Swap
+,$ROOT, type=linux      # Root
+,$HOME, type=linux      # Home (rest of disk if 100%)
 EOF
 
 # Make filesystems
