@@ -1,96 +1,133 @@
 #!/bin/bash
-# Installer by simeshka
+set -euo pipefail
 
-# Default values
+# ===== Defaults you can override with flags =====
 SWAP="4G"
 ROOT="20G"
-HOME="100%"
+HOME="100%"        # "100%" means use the rest of the disk
 USER="home"
 HOST="arch"
+DEVICE="/dev/sda"  # change if needed, e.g. /dev/vda or /dev/nvme0n1
 
-# Parse arguments
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --swap) SWAP="$2"; shift ;;
-        --root) ROOT="$2"; shift ;;
-        --home) HOME="$2"; shift ;;
-        --user) USER="$2"; shift ;;
-        --host) HOST="$2"; shift ;;
-        *) echo "Unknown arg: $1"; exit 1 ;;
-    esac
-    shift
+# ===== Parse flags =====
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --swap)  SWAP="$2"; shift 2 ;;
+    --root)  ROOT="$2"; shift 2 ;;
+    --home)  HOME="$2"; shift 2 ;;
+    --user)  USER="$2"; shift 2 ;;
+    --host)  HOST="$2"; shift 2 ;;
+    --disk)  DEVICE="$2"; shift 2 ;;   # optional: choose disk
+    *) echo "Unknown arg: $1"; exit 1 ;;
+  esac
 done
 
 echo "=== Arch Installer ==="
-echo "Swap: $SWAP | Root: $ROOT | Home: $HOME | User: $USER | Host: $HOST"
+echo "Disk: $DEVICE | Swap: $SWAP | Root: $ROOT | Home: $HOME | User: $USER | Host: $HOST"
 sleep 3
 
-# Networking & clock
-ping -c 1 archlinux.org
+# ---- net + time (ok to fail ping if offline mirror used) ----
+ping -c1 archlinux.org || true
 timedatectl set-ntp true
 
-# Partitioning (auto with sfdisk)
-cat <<EOF | sfdisk /dev/sda
-label: gpt
-,512M, type=uefi        # EFI
-,$SWAP, type=swap       # Swap
-,$ROOT, type=linux      # Root
-,$HOME, type=linux      # Home (rest of disk if 100%)
-EOF
+# ---- Partition with fdisk (GPT, 4 parts: EFI, swap, root, home) ----
+# fdisk accepts +SIZE[M|G] endings. For "use rest": hit Enter on size prompt.
+# We'll construct the home size line depending on $HOME.
+if [[ "$HOME" == "100%" ]]; then
+  HOME_SIZE_LINE=""   # blank = default end (rest of disk)
+else
+  HOME_SIZE_LINE="+$HOME"
+fi
 
-# Make filesystems
-mkfs.fat -F32 /dev/sda1
-mkswap /dev/sda2
-mkfs.ext4 /dev/sda3
-mkfs.ext4 /dev/sda4
+# shellcheck disable=SC2059
+fdisk "$DEVICE" <<FDISK_CMDS
+g
+n
+1
 
-# Mount
-mount /dev/sda3 /mnt
-mkdir -p /mnt/{boot/efi,home}
-mount /dev/sda1 /mnt/boot/efi
-mount /dev/sda4 /mnt/home
-swapon /dev/sda2
++512M
+t
+1
+n
+2
 
-# Base system
-pacstrap -K /mnt base linux linux-firmware vim nano networkmanager grub efibootmgr
++$SWAP
+t
+2
+19
+n
+3
 
-# Fstab
++$ROOT
+t
+3
+23
+n
+4
+
+$HOME_SIZE_LINE
+t
+4
+42
+w
+FDISK_CMDS
+
+# ---- Filesystems & mount ----
+EFI_PART="${DEVICE}1"
+SWAP_PART="${DEVICE}2"
+ROOT_PART="${DEVICE}3"
+HOME_PART="${DEVICE}4"
+
+mkfs.fat -F32 "$EFI_PART"
+mkswap "$SWAP_PART"
+mkfs.ext4 -F "$ROOT_PART"
+mkfs.ext4 -F "$HOME_PART"
+
+mount "$ROOT_PART" /mnt
+mkdir -p /mnt/boot/efi /mnt/home
+mount "$EFI_PART" /mnt/boot/efi
+mount "$HOME_PART" /mnt/home
+swapon "$SWAP_PART"
+
+# ---- Base install ----
+pacstrap -K /mnt base linux linux-firmware nano vim networkmanager grub efibootmgr
+
 genfstab -U /mnt >> /mnt/etc/fstab
 
-# Chroot setup
-arch-chroot /mnt /bin/bash <<CHROOT
+# ---- Chroot config ----
+arch-chroot /mnt /bin/bash <<'CHROOT'
+set -euo pipefail
 ln -sf /usr/share/zoneinfo/Europe/Moscow /etc/localtime
 hwclock --systohc
-echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+grep -q '^en_US.UTF-8 UTF-8' /etc/locale.gen || echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen
 locale-gen
 echo "LANG=en_US.UTF-8" > /etc/locale.conf
-echo "$HOST" > /etc/hostname
-cat >> /etc/hosts <<EOF2
+CHROOT
+
+# write hostname & hosts from outside so we can use $HOST
+echo "$HOST" > /mnt/etc/hostname
+cat > /mnt/etc/hosts <<EOF
 127.0.0.1   localhost
 ::1         localhost
 127.0.1.1   $HOST.localdomain $HOST
-EOF2
+EOF
 
-# Root password
-echo "Set root password:"
-passwd
+# set root password interactively inside chroot
+arch-chroot /mnt bash -lc 'echo "Set root password:"; passwd'
 
-# User
-useradd -m -G wheel -s /bin/bash $USER
-echo "Set password for $USER:"
-passwd $USER
-echo "%wheel ALL=(ALL) ALL" >> /etc/sudoers
+# create user with sudo (wheel)
+arch-chroot /mnt bash -lc "useradd -m -G wheel -s /bin/bash '$USER'"
+arch-chroot /mnt bash -lc "echo 'Set password for $USER:'; passwd '$USER'"
+# enable sudo for wheel
+arch-chroot /mnt bash -lc "sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers"
 
-# Services
-systemctl enable NetworkManager
+# enable networking & install bootloader
+arch-chroot /mnt systemctl enable NetworkManager
+arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Arch
+arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 
-# Bootloader
-grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=Arch
-grub-mkconfig -o /boot/grub/grub.cfg
-CHROOT
-
-# Finish
+# ---- Done ----
 umount -R /mnt
 swapoff -a
-echo "Arch installed! Rebooting..."
+echo "Install complete. Rebooting…"
 reboot
