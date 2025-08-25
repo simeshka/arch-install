@@ -94,7 +94,8 @@ main() {
   pac -Sy
 
   print_menu
-  read -rp "Enter choice [1-9]: " choice
+  printf "Enter choice [1-9]: "
+  read choice
 
   case "$choice" in
     1) echo "Installing KDE Plasma...";   install_kde ;;
