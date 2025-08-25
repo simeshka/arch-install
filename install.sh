@@ -22,7 +22,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo "=== Arch Installer ==="
-echo "Disk: $DEVICE | Swap: $SWAP | Root: $ROOT | Home: $HOME | User: $USER | Host: $HOST"
+echo "Disk: $DEVICE | Swap: $SWAP | Root: $ROOT | User: $USER | Host: $HOST"
 sleep 3
 
 # ---- net + time (ok to fail ping if offline mirror used) ----
